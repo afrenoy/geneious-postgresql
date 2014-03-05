@@ -20,11 +20,6 @@ For geneious to be able to work with the database, each user should be granted S
 
 
 import psycopg2
-#conn = psycopg2.connect(database="test",user="afrenoy",password="afrenoy", port="1111", host="localhost")
-
-
-
-#conn.close()
 
 def createuser(conn,name,createprivategroup=True,password='ChangeMe'):
     """ Create a new user, give him appropriate rights on the database, and modify g_* table to allow him to perform operations from geneious
