@@ -162,7 +162,7 @@ def addusertocollaboration(conn,collaborationname,username,role):
     cur.execute("SELECT id FROM g_group where name=%s",(collaborationname, ))
     matching=cur.fetchall()
     assert(len(matching)==1)
-    grouid=matching[0][0]
+    groupid=matching[0][0]
 
     # Find the user in table g_user
     cur.execute("SELECT id FROM g_user where username=%s",(username, ))
