@@ -155,3 +155,52 @@ def createcollaboration(conn,collaborationname,private=False):
     validateandwrite(conn)
     cur.close()
 
+def addusertocollaboration(conn,collaborationname,username,role):
+    cur = conn.cursor()
+
+    # Find the collaboration in table g_group
+    cur.execute("SELECT id FROM g_group where name=%s",(collaborationname, ))
+    matching=cur.fetchall()
+    assert(len(matching)==1)
+    grouid=matching[0][0]
+
+    # Find the user in table g_user
+    cur.execute("SELECT id FROM g_user where username=%s",(username, ))
+    matching=cur.fetchall()
+    assert(len(matching)==1)
+    userid=matching[0][0]
+
+    # Find the role in table g_role
+    cur.execute("SELECT id FROM g_role where name=%s",(role, ))
+    matching=cur.fetchall()
+    assert(len(matching)==1)
+    roleid=matching[0][0]
+
+    # Give the user the wanted rights on the collaboration
+    cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(userid,groupid,roleid))
+
+    # Present the changes to the user
+    print 'Adding user ' + username + ' with id ' + str(userid) + ' to the collaboration ' + collaborationname + ' with id ' + str(groupid) + ' and giving him role ' + role
+    cur.execute("SELECT * FROM g_user_group_role")
+    print 'New state of g_user_group_role: '
+    print cur.fetchall()
+
+    # Write to the database if the user agrees
+    validateandwrite(conn)
+    cur.close()
+
+def validateandwrite(conn):
+    print 'Last chance to cancel ! '
+    while True:
+        answer=raw_input('Press (y) to confirm you want to write this to remote database, (n) to cancel ')
+        if answer=='y':
+            conn.commit()
+            print 'New user added to database'
+            break
+        elif answer=='n':
+            conn.rollback()
+            print 'Canceled, new user has not been added'
+            break
+        else:
+            print 'Sorry, I did not understand your answer'
+
