@@ -118,3 +118,40 @@ def createuser(conn,name,createprivategroup=True,password='ChangeMe'):
             print 'Sorry, I did not understand your answer'
     cur.close()
 
+def createcollaboration(conn,collaborationname,private=False):
+    cur = conn.cursor()
+
+    # Find a free group id for this collaboration
+    cur.execute("SELECT * FROM g_group")
+    grouplist=cur.fetchall()
+    allgroup_ids=[grouplist[i][0] for i in range(0,len(grouplist))]
+    if private:
+        newgroupid=min(set(range(2,1000,2))-set(allgroup_ids))
+    else:
+        newgroupid=min(set(range(1,1000,2))-set(allgroup_ids))
+
+    # Create this group
+    cur.execute("INSERT INTO g_group VALUES (%s, %s)",(newgroupid, collaborationname))
+
+    # If it is public, give everybody View right
+    if not private:
+        cur.execute("SELECT * FROM g_user")
+        userlist=cur.fetchall()
+        allusers_ids=[userlist[i][0] for i in range(0,len(userlist))]
+        for i in [x for x in allusers_ids if x>0]:
+            # user id -1 is 'Global', defined and internally used by geneious
+            cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(i,newgroupid,2))
+
+    # Present the changes to the user
+    print 'Creating new collaboration group ' + collaborationname + ' with id ' + str(newgroupid)
+    cur.execute("SELECT * FROM g_group")
+    print 'New state of g_group: '
+    print cur.fetchall()
+    cur.execute("SELECT * FROM g_user_group_role")
+    print 'New state of g_user_group_role: '
+    print cur.fetchall()
+
+    # Write to the database if the user agrees
+    validateandwrite(conn)
+    cur.close()
+
