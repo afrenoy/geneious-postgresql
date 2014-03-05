@@ -216,8 +216,42 @@ def removeuserfromcollaboration(conn,collaborationname,username):
     # Write to the database if the user agrees
     validateandwrite(conn)
     cur.close()
-    
 
+def removeuser(conn,username):
+    cur = conn.cursor()
+
+    # Find the userid in table g_user
+    cur.execute("SELECT id, primary_group_id FROM g_user WHERE username=%s",(username, ))
+    matching=cur.fetchall()
+    assert(len(matching)==1)
+    userid=matching[0][0]
+    primarygroupid=matching[0][1]
+    
+    # Find all the groups to which user belongs
+    cur.execute("SELECT g_group_id, g_role_id FROM g_user_group_role WHERE g_user_id=%s",(userid, ))
+    matchinggroups=cur.fetchall()
+    
+    # Remove all references from the user in table g_user_group_role
+    cur.execute("DELETE FROM g_user_group_role WHERE g_user_id=%s",(userid, ))
+    
+    # We do no longer allow user to login
+    cur.execute("ALTER ROLE " + username + " NOLOGIN")
+    
+    # Present the changes to the user
+    print 'Removing all references to user ' + username + ' with id ' + str(userid) + ' in permission (g_user_group_role) table, and removing LOGIN permission.'
+    print 'The user is however not deleted because this would probably leave the database in an inconsistent state'
+    print 'The groups on which the user has Admin right are not deleted for the same reason'
+    print 'The documents created by the user will stay accessible'
+    print 'We would need Biomatters to release proper documentation in order to do more without risking a major crash with potential loss of data'
+    cur.execute("SELECT * FROM g_user_group_role")
+    print 'New state of g_user_group_role: '
+    print cur.fetchall()
+
+    # Write to the database if the user agrees
+    validateandwrite(conn)
+    cur.close()
+
+    
 def validateandwrite(conn):
     print 'Last chance to cancel ! '
     while True:
