@@ -36,62 +36,62 @@ def createuser(conn,name,createprivategroup=True,password='ChangeMe'):
     6) The new user is given View right on every existing group with an odd id (= public groups).
     7) Every already existing user is given View right on new user's primary (public) group.
     """
-    
+
     cur = conn.cursor()
     # Enter the user in postgresql
     SQL=("CREATE ROLE " + name + " LOGIN PASSWORD %s")
     data=(password, )
     cur.execute(SQL,data)
-    
+
     # Grant appropriate permissions, ie SELECT, INSERT, UPDATE, DELETE on all tables except g_group, g_role, g_user, g_user_group_role on which we only allow SELECT
     cur.execute("GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO "+name)
     cur.execute("REVOKE INSERT,UPDATE,DELETE ON TABLE g_group FROM "+name)
     cur.execute("REVOKE INSERT,UPDATE,DELETE ON TABLE g_user FROM "+name)
     cur.execute("REVOKE INSERT,UPDATE,DELETE ON TABLE g_role FROM "+name)
     cur.execute("REVOKE INSERT,UPDATE,DELETE ON TABLE g_user_group_role FROM "+name)
-    
+
     # Find a free user id
     cur.execute("SELECT * FROM g_user")
     userlist=cur.fetchall()
     allusers_ids=[userlist[i][0] for i in range(0,len(userlist))]
     newuserid=min(set(range(1,1000))-set(allusers_ids))
-    
+
     # Find a free group id as primary group for the user. Must be an odd number
     cur.execute("SELECT * FROM g_group")
     grouplist=cur.fetchall()
     allgroup_ids=[grouplist[i][0] for i in range(0,len(grouplist))]
     newgroupid=min(set(range(1,1000,2))-set(allgroup_ids))
-    
+
     # Create this new group
     newgroupname=name+'_public'
     cur.execute("INSERT INTO g_group VALUES (%s, %s)",(newgroupid, newgroupname))
-    
+
     # Add the user to the g_user table
     cur.execute("INSERT INTO g_user VALUES (%s, %s, %s)",(newuserid, newgroupid, name))
-    
+
     # Create a private group for the user if asked. Id must be an even number
     if createprivategroup:
         newprivategroupid=min(set(range(2,1000,2))-set(allgroup_ids)-set([newgroupid]))
         newprivategroupname=name+'_private'
         cur.execute("INSERT INTO g_group VALUES (%s, %s)",(newprivategroupid, newprivategroupname))
-        
+
     # Give new user Admin right on his public group
     cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(newuserid,newgroupid,0))
-    
+
     # Give new user Admin right on his private group
     if createprivategroup:
         cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(newuserid,newprivategroupid,0))
-        
+
     # Give new user View right on all other users public group
     for i in [x for x in allgroup_ids if x%2==1 and x>2]:
         # group id 1 is 'Everybody' and group id 2 is 'Hidden', defined and internally used by geneious
         cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(newuserid,i,2))
-        
+
     # Give all other users View right on new user public group
     for i in [x for x in allusers_ids if x>0]:
         # user id -1 is 'Global', defined and internally used by geneious
         cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(i,newgroupid,2))
-        
+
     # Check and write
     print 'Creating user ' + name + ' with id ' + str(newuserid) + ' primary group ' + newgroupname + ' with id ' + str(newgroupid)
     cur.execute("SELECT * FROM g_user")
