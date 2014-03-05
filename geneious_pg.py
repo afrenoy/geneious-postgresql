@@ -189,6 +189,40 @@ def addusertocollaboration(conn,collaborationname,username,role):
     validateandwrite(conn)
     cur.close()
 
+def removeuserfromcollaboration(conn,collaborationname,username):
+    cur = conn.cursor()
+
+    # Find the collaboration in table g_group
+    cur.execute("SELECT id FROM g_group where name=%s",(collaborationname, ))
+    matching=cur.fetchall()
+    assert(len(matching)==1)
+    groupid=matching[0][0]
+
+    # Find the user in table g_user
+    cur.execute("SELECT id FROM g_user where username=%s",(username, ))
+    matching=cur.fetchall()
+    assert(len(matching)==1)
+    userid=matching[0][0]
+
+    # Remove the rights on the collaboration for the user. If it is a public (odd group id) collaboration, we keep the View righ (that exist in additon the the Edit/Admin right because that's how createuser and createcollaboration work) # Warning not true for user public primary group
+    if groupid%2 == 1:
+        cur.execute("DELETE FROM g_user_group_role WHERE g_user_id=%s AND g_group_id=%s AND (g_role_id=%s OR g_role_id=%s)",(userid,groupid,0,1))
+    else:
+        cur.execute("DELETE FROM g_user_group_role WHERE g_user_id=%s AND g_group_id=%s",(userid,groupid))
+    
+    # Present the changes to the user
+    print 'Removing user ' + username + ' with id ' + str(userid) + ' from the collaboration ' + collaborationname + ' with id ' + str(groupid)
+    if grouid%2 == 1:
+        print 'Collaboration happens to be public, user will keep View right'
+    cur.execute("SELECT * FROM g_user_group_role")
+    print 'New state of g_user_group_role: '
+    print cur.fetchall()
+
+    # Write to the database if the user agrees
+    validateandwrite(conn)
+    cur.close()
+    
+
 def validateandwrite(conn):
     print 'Last chance to cancel ! '
     while True:
