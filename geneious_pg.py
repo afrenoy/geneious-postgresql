@@ -258,7 +258,7 @@ def unlockuser(conn,username):
     matching=cur.fetchall()
     assert(len(matching)<=1)
     privategroupid=None
-    if len(matching==1):
+    if len(matching)==1:
         privategroupid=matching[0][0]
     
     # Give back the user admin right on these groups
