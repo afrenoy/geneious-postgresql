@@ -254,14 +254,14 @@ def changeuserpassword(conn,username,password):
 def validateandwrite(conn):
     print 'Last chance to cancel ! '
     while True:
-        answer=raw_input('Press (y) to confirm you want to write this to remote database, (n) to cancel ')
+        answer=raw_input('Press (y) to confirm you want to write this to remote database, (n) to cancel: ')
         if answer=='y':
             conn.commit()
-            print 'New user added to database'
+            print 'Changes written to the database'
             break
         elif answer=='n':
             conn.rollback()
-            print 'Canceled, new user has not been added'
+            print 'Canceled, changes not written yet were discarded'
             break
         else:
             print 'Sorry, I did not understand your answer'
