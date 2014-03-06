@@ -35,6 +35,9 @@ def createuser(conn,name,createprivategroup=True,password='ChangeMe'):
 
     cur = conn.cursor()
     # Enter the user in postgresql
+    # It seems that the password are hashed (by md5) in the form $password + $username
+    if not 'md5' in password:
+        print 'It seems that you just gave me a non encrypted password. Bad admin ! Bad user ! You bunch of morons ! Be more cautious next time !'
     SQL=("CREATE ROLE " + name + " LOGIN PASSWORD %s")
     data=(password, )
     cur.execute(SQL,data)
@@ -254,6 +257,19 @@ def removeuser(conn,username):
     validateandwrite(conn)
     cur.close()
 
+def changeuserpassword(conn,username,password):
+    cur = conn.cursor()
+    # Enter the user in postgresql
+    # It seems that the password are hashed (by md5) in the form $password + $username
+    if not 'md5' in password:
+        print 'It seems that you just gave me a non encrypted password. Bad admin ! Bad user ! You bunch of morons ! Be more cautious next time !'
+    SQL=("ALTER ROLE " + username + " PASSWORD %s")
+    data=(password, )
+    cur.execute(SQL,data)
+    print 'Password changed for user ' + username
+    print 'About to write changes in the database'
+    validateandwrite(conn)
+    cur.close()
     
 def validateandwrite(conn):
     print 'Last chance to cancel ! '
