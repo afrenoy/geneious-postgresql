@@ -152,6 +152,8 @@ def addusertocollaboration(conn,collaborationname,username,role):
     assert(len(matching)==1)
     roleid=matching[0][0]
 
+    # Remove previous rights on collaboration if existing
+    cur.execute("DELETE FROM g_user_group_role WHERE g_user_id=%s AND g_group_id=%s",(userid,groupid))
     # Give the user the wanted rights on the collaboration
     cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(userid,groupid,roleid))
 
