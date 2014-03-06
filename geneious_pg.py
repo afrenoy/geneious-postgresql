@@ -197,6 +197,16 @@ def removeuserfromcollaboration(conn,collaborationname,username):
     cur.close()
 
 def removeuser(conn,username):
+    print 'Real user removal is not implemented yet, we will just lock the user:'
+    print 'All references to user ' + username + ' will be remove from in permission (g_user_group_role) table, and LOGIN permission will also be revoked.'
+    print 'The user will however not be deleted because this would probably leave the database in an inconsistent state'
+    print 'The groups on which the user has Admin right will not deleted for the same reason'
+    print 'The documents created by the user will stay accessible'
+    print 'We would need Biomatters to release proper documentation in order to do more without risking a major crash with potential loss of data'
+    print ' '
+    lockuser(conn,username)
+
+def lockuser(conn,username):
     cur = conn.cursor()
 
     # Find the userid in table g_user
@@ -218,17 +228,14 @@ def removeuser(conn,username):
     
     # Present the changes to the user
     print 'Removing all references to user ' + username + ' with id ' + str(userid) + ' in permission (g_user_group_role) table, and removing LOGIN permission.'
-    print 'The user is however not deleted because this would probably leave the database in an inconsistent state'
-    print 'The groups on which the user has Admin right are not deleted for the same reason'
-    print 'The documents created by the user will stay accessible'
-    print 'We would need Biomatters to release proper documentation in order to do more without risking a major crash with potential loss of data'
-    cur.execute("SELECT * FROM g_user_group_role")
-    print 'New state of g_user_group_role: '
-    print cur.fetchall()
+    listall(conn,prefix='New ')
 
     # Write to the database if the user agrees
     validateandwrite(conn)
     cur.close()
+    
+def unlockuser(conn,username):
+    print 'To be written in case we want to add back an user that we previously removed'
 
 def changeuserpassword(conn,username,password):
     cur = conn.cursor()
