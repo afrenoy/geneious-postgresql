@@ -7,6 +7,7 @@ Each belongs primarily to one group (column primary_group_id of table g_user). W
 Each user can have a role in an unlimited number of groups. The three roles are View (allowing read access to this group folder), Edit (allowing write access), and Admin (no idea what it is allowing more than Edit, maybe the ability to add/remove folders in this group ?)
 The table g_user_group_role is storing the roles of users in group.
 For geneious to be able to work with the database, each user should be granted SELECT, INSERT, UPDATE, and DELETE rights on all tables, except the g_user, g_folder, g_group for which he should be given only SELECT right otherwise he could alter the permissions and promote himself as admin of everything.
+It seems that if one user has several permissions on a group (several lines in table g_user_group_role), only the first one is taken into account. Thus when adding one user as admin of a collaboration, we need to replace his right to View by his right to Admin/Write, and not add a new line
 """
 
 
@@ -83,8 +84,9 @@ def createuser(conn,name,createprivategroup=True,password='ChangeMe'):
         cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(newuserid,i,2))
 
     # Give all other users View right on new user public group
-    for i in [x for x in allusers_ids if x>0]:
+    for i in [x for x in allusers_ids if x>1]:
         # user id -1 is 'Global', defined and internally used by geneious
+        # user id 1 is admin (geneious will always give id 1 to the user that created and initialized the database)
         cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(i,newgroupid,2))
 
     # Check and write
@@ -133,8 +135,9 @@ def createcollaboration(conn,collaborationname,private=False):
         cur.execute("SELECT * FROM g_user")
         userlist=cur.fetchall()
         allusers_ids=[userlist[i][0] for i in range(0,len(userlist))]
-        for i in [x for x in allusers_ids if x>0]:
+        for i in [x for x in allusers_ids if x>1]:
             # user id -1 is 'Global', defined and internally used by geneious
+            # user id 1 is admin (geneious will always give id 1 to the user that created and initialized the database)
             cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(i,newgroupid,2))
 
     # Present the changes to the user
