@@ -94,28 +94,8 @@ def createuser(conn,name,createprivategroup=True,password='ChangeMe'):
 
     # Check and write
     print 'Creating user ' + name + ' with id ' + str(newuserid) + ' primary group ' + newgroupname + ' with id ' + str(newgroupid)
-    cur.execute("SELECT * FROM g_user")
-    print 'New state of g_user: '
-    print cur.fetchall()
-    cur.execute("SELECT * FROM g_group")
-    print 'New state of g_group: '
-    print cur.fetchall()
-    cur.execute("SELECT * FROM g_user_group_role")
-    print 'New state of g_user_group_role: '
-    print cur.fetchall()
-    print 'Last chance to cancel ! '
-    while True:
-        answer=raw_input('Press (y) to confirm you want to write this to remote database, (n) to cancel ')
-        if answer=='y':
-            conn.commit()
-            print 'New user added to database'
-            break
-        elif answer=='n':
-            conn.rollback()
-            print 'Canceled, new user has not been added'
-            break
-        else:
-            print 'Sorry, I did not understand your answer'
+    listall(conn,prefix='New ')
+    validateandwrite(conn)
     cur.close()
 
 def createcollaboration(conn,collaborationname,private=False):
@@ -145,12 +125,7 @@ def createcollaboration(conn,collaborationname,private=False):
 
     # Present the changes to the user
     print 'Creating new collaboration group ' + collaborationname + ' with id ' + str(newgroupid)
-    cur.execute("SELECT * FROM g_group")
-    print 'New state of g_group: '
-    print cur.fetchall()
-    cur.execute("SELECT * FROM g_user_group_role")
-    print 'New state of g_user_group_role: '
-    print cur.fetchall()
+    listall(conn,prefix='New ')
 
     # Write to the database if the user agrees
     validateandwrite(conn)
@@ -182,9 +157,7 @@ def addusertocollaboration(conn,collaborationname,username,role):
 
     # Present the changes to the user
     print 'Adding user ' + username + ' with id ' + str(userid) + ' to the collaboration ' + collaborationname + ' with id ' + str(groupid) + ' and giving him role ' + role
-    cur.execute("SELECT * FROM g_user_group_role")
-    print 'New state of g_user_group_role: '
-    print cur.fetchall()
+    listall(conn,prefix='New ')
 
     # Write to the database if the user agrees
     validateandwrite(conn)
@@ -215,9 +188,7 @@ def removeuserfromcollaboration(conn,collaborationname,username):
     print 'Removing user ' + username + ' with id ' + str(userid) + ' from the collaboration ' + collaborationname + ' with id ' + str(groupid)
     if grouid%2 == 1:
         print 'Collaboration happens to be public, user will keep View right'
-    cur.execute("SELECT * FROM g_user_group_role")
-    print 'New state of g_user_group_role: '
-    print cur.fetchall()
+    listall(conn,prefix='New ')
 
     # Write to the database if the user agrees
     validateandwrite(conn)
@@ -286,3 +257,15 @@ def validateandwrite(conn):
         else:
             print 'Sorry, I did not understand your answer'
 
+def listall(conn,prefix='Current '):
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM g_user")
+    print prefix + 'state of g_user: '
+    print cur.fetchall()
+    cur.execute("SELECT * FROM g_group")
+    print prefix + 'state of g_group: '
+    print cur.fetchall()
+    cur.execute("SELECT * FROM g_user_group_role")
+    print prefix + 'state of g_user_group_role: '
+    print cur.fetchall()
+    
