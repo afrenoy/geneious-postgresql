@@ -235,8 +235,48 @@ def lockuser(conn,username):
     cur.close()
     
 def unlockuser(conn,username):
-    print 'To be written in case we want to add back an user that we previously removed'
-
+    cur = conn.cursor()
+    
+    # Find the userid in table g_user
+    cur.execute("SELECT id, primary_group_id FROM g_user WHERE username=%s",(username, ))
+    matching=cur.fetchall()
+    assert(len(matching)==1)
+    userid=matching[0][0]
+    primarygroupid=matching[0][1]
+    
+    # Find his public and private groups if existing
+    publicgroupname=username+'_public'
+    cur.execute("SELECT id FROM g_group WHERE name=%s",(publicgroupname,))
+    matching=cur.fetchall()
+    assert(len(matching)==1)
+    publicgroupid=matching[0][0]
+    
+    assert (primarygroupid==publicgroupid)
+    
+    privategroupname=username+'_private'
+    cur.execute("SELECT id FROM g_group WHERE name=%s",(privategroupname,))
+    matching=cur.fetchall()
+    assert(len(matching)<=1)
+    privategroupid=None
+    if len(matching==1):
+        privategroupid=matching[0][0]
+    
+    # Give back the user admin right on these groups
+    cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(userid,publicgroupid,0))
+    if privategroupid!=None:
+        cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(userid,privategroupid,0))
+    
+    # The user will be allowed to login again, keeping his old password
+    cur.execute("ALTER ROLE " + username + " LOGIN")
+    
+    # Present changes to the user
+    print 'Granting login privileges to user ' + username + ' and giving him Admin rights on his public group, and private group if existing'
+    listall(conn,prefix='New ')
+    
+    # Write to the database if the user agrees
+    validateandwrite(conn)
+    cur.close()
+    
 def changeuserpassword(conn,username,password):
     cur = conn.cursor()
     # Enter the user in postgresql
