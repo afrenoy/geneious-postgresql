@@ -92,6 +92,14 @@ def createuser(conn,name,createprivategroup=True,password='ChangeMe'):
         # user id 1 is admin (geneious will always give id 1 to the user that created and initialized the database)
         cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(i,newgroupid,2))
 
+    # Create root folder for the user
+    cur.execute("SELECT next_id FROM next_table_id WHERE table_name='folder'")
+    matching=cur.fetchall()
+    assert(len(matching)==1)
+    number=matching[0][0]
+    cur.execute("INSERT INTO folder VALUES (%s,%s,1,'t',CURRENT_TIMESTAMP,%s)",(number+1,newgroupid,name))
+    cur.execute("UPDATE next_table_id SET next_id=%s WHERE table_name='folder'",(number+1, ))
+    
     # Check and write
     print 'Creating user ' + name + ' with id ' + str(newuserid) + ' primary group ' + newgroupname + ' with id ' + str(newgroupid)
     listall(conn,prefix='New ')
