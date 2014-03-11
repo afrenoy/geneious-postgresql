@@ -196,7 +196,7 @@ def removeuserfromcollaboration(conn,collaborationname,username):
     
     # Present the changes to the user
     print 'Removing user ' + username + ' with id ' + str(userid) + ' from the collaboration ' + collaborationname + ' with id ' + str(groupid)
-    if grouid%2 == 1:
+    if groupid%2 == 1:
         print 'Collaboration happens to be public, user will keep View right'
     listall(conn,prefix='New ')
 
