@@ -212,10 +212,9 @@ def removeuser(conn,username):
     print 'We would need Biomatters to release proper documentation in order to do more without risking a major crash with potential loss of data'
     print ' '
     lockuser(conn,username)
-
-def lockuser(conn,username):
+    
     cur = conn.cursor()
-
+    
     # Find the userid in table g_user
     cur.execute("SELECT id, primary_group_id FROM g_user WHERE username=%s",(username, ))
     matching=cur.fetchall()
@@ -230,18 +229,26 @@ def lockuser(conn,username):
     # Remove all references from the user in table g_user_group_role
     cur.execute("DELETE FROM g_user_group_role WHERE g_user_id=%s",(userid, ))
     
-    # We do no longer allow user to login
-    cur.execute("ALTER ROLE " + username + " NOLOGIN")
-    
     # Present the changes to the user
-    print 'Removing all references to user ' + username + ' with id ' + str(userid) + ' in permission (g_user_group_role) table, and removing LOGIN permission.'
+    print 'Removing all references to user ' + username + ' with id ' + str(userid) + ' in permission (g_user_group_role) table.'
     listall(conn,prefix='New ')
 
     # Write to the database if the user agrees
     validateandwrite(conn)
     cur.close()
     
-def unlockuser(conn,username):
+def lockuser(conn,username):
+    cur = conn.cursor()
+
+    # We do no longer allow user to login
+    cur.execute("ALTER ROLE " + username + " NOLOGIN")
+    print 'About to remove LOGIN right to user ' + username
+    validateandwrite(conn)
+    cur.close()
+
+def restoreuser(conn,username):
+    unlockuser(conn,username)
+    
     cur = conn.cursor()
     
     # Find the userid in table g_user
@@ -273,16 +280,23 @@ def unlockuser(conn,username):
     if privategroupid!=None:
         cur.execute("INSERT INTO g_user_group_role VALUES (%s, %s, %s)",(userid,privategroupid,0))
     
-    # The user will be allowed to login again, keeping his old password
-    cur.execute("ALTER ROLE " + username + " LOGIN")
-    
     # Present changes to the user
-    print 'Granting login privileges to user ' + username + ' and giving him Admin rights on his public group, and private group if existing'
+    print 'Giving back the user admin right on his public and private groups'
     listall(conn,prefix='New ')
     
     # Write to the database if the user agrees
     validateandwrite(conn)
     cur.close()
+    
+def unlockuser(conn,username):
+    cur = conn.cursor()
+    # The user will be allowed to login again, keeping his old password
+    cur.execute("ALTER ROLE " + username + " LOGIN")
+    
+    print 'Granting back login privileges to user ' + username
+    validateandwrite(conn)
+    cur.close()
+
     
 def changeuserpassword(conn,username,password):
     cur = conn.cursor()
