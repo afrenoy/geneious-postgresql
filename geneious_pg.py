@@ -188,12 +188,11 @@ def removeuserfromcollaboration(conn,collaborationname,username):
     assert(len(matching)==1)
     userid=matching[0][0]
 
-    # Remove the rights on the collaboration for the user. If it is a public (odd group id) collaboration, we keep the View righ (that exist in additon the the Edit/Admin right because that's how createuser and createcollaboration work) # Warning not true for user public primary group
+    # Remove the rights on the collaboration for the user. If it is a public (odd group id) collaboration, we give the View righ in replacement of Edit/Admin right
+    cur.execute("DELETE FROM g_user_group_role WHERE g_user_id=%s AND g_group_id=%s",(userid,groupid))
     if groupid%2 == 1:
-        cur.execute("DELETE FROM g_user_group_role WHERE g_user_id=%s AND g_group_id=%s AND (g_role_id=%s OR g_role_id=%s)",(userid,groupid,0,1))
-    else:
-        cur.execute("DELETE FROM g_user_group_role WHERE g_user_id=%s AND g_group_id=%s",(userid,groupid))
-    
+        cur.execute("INSERT INTO g_user_group_role VALUES (%s,%s,2)",(userid,groupid))
+
     # Present the changes to the user
     print 'Removing user ' + username + ' with id ' + str(userid) + ' from the collaboration ' + collaborationname + ' with id ' + str(groupid)
     if groupid%2 == 1:
